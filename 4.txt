@@ -54,3 +54,18 @@ for word, index in word_index.items():
 loss, accuracy = cbow_model.evaluate(X, y)
 print(f"Training Loss: {loss}")
 print(f"Training Accuracy: {accuracy}")
+
+import numpy as np
+def predict_target(context_words):
+    context_sequence = tokenizer.texts_to_sequences([context_words])  
+    context_sequence = pad_sequences(context_sequence, maxlen=window_size * 2)  
+    
+    pred_probs = cbow_model.predict(context_sequence)  
+    
+    pred_index = np.argmax(pred_probs)  
+    
+    return index_word[pred_index]  
+
+context_example = ['deep', 'neural']  
+predicted_target = predict_target(context_example)
+print(f"Predicted target word: {predicted_target}")
