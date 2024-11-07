@@ -1,0 +1,56 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing import text
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, Lambda, Dense
+from tensorflow.keras.utils import to_categorical
+
+corpus = [
+    'this is a sample sentence',
+    'another example for training',
+    'one more sentence to use'
+]
+
+tokenizer = text.Tokenizer()
+tokenizer.fit_on_texts(corpus)  
+word_index = tokenizer.word_index  
+index_word = {index: word for word, index in word_index.items()}  
+
+window_size = 2  
+vocab_size = len(word_index) + 1  
+sequences = tokenizer.texts_to_sequences(corpus)  
+
+X = []
+y = []  
+for sequence in sequences:
+    for i in range(window_size, len(sequence) - window_size):
+        context = sequence[i - window_size:i] + sequence[i + 1:i + window_size + 1]  # Context words
+        target = sequence[i]  
+        X.append(context)  
+        y.append(target)    
+
+X = pad_sequences(X, maxlen=window_size * 2)
+
+y = to_categorical(y, num_classes=vocab_size)
+
+embedding_dim = 100  
+
+cbow_model = Sequential([
+    Embedding(input_dim=vocab_size, output_dim=embedding_dim),  
+    Lambda(lambda x: tf.reduce_mean(x, axis=1)),  
+    Dense(vocab_size, activation='softmax')  
+])
+
+cbow_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+cbow_model.fit(X, y, epochs=50, batch_size=16)  
+
+embedding_weights = cbow_model.layers[0].get_weights()[0]
+
+for word, index in word_index.items():
+    print(f"Word: {word}, Embedding: {embedding_weights[index]}")
+
+loss, accuracy = cbow_model.evaluate(X, y)
+print(f"Training Loss: {loss}")
+print(f"Training Accuracy: {accuracy}")
